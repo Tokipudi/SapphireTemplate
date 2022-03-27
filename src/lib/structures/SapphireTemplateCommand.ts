@@ -7,9 +7,11 @@ export abstract class SapphireTemplateCommand extends Command {
 
     public constructor(context: PieceContext, options?: SapphireTemplateCommandOptions) {
         super(context, options);
-        this.guildIds = [
-            '890643277081092117', // Nox Local
-            '890917187412439040', // Nox Local 2
-        ];
+        this.guildIds = process.env.NODE_ENV !== 'production'
+            ? [
+                '890643277081092117', // Nox Local
+                '890917187412439040' // Nox Local 2
+            ]
+            : [];
     }
 }
