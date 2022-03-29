@@ -70,7 +70,7 @@ export class SapphireTemplatePaginatedMessage extends PaginatedMessage {
         ]);
     }
 
-    public override setActions(actions: KelevraPaginatedMessageAction[]): this {
+    public override setActions(actions: CustomPaginatedMessageAction[]): this {
         this.actions.clear();
         return this.addActions(actions);
     }
@@ -108,7 +108,7 @@ export class SapphireTemplatePaginatedMessage extends PaginatedMessage {
         if (this.pages.length > 1) {
             const messageComponents: (MessageButton | MessageSelectMenu)[] = [];
 
-            for (const interaction of this.actions.values() as IterableIterator<KelevraPaginatedMessageAction>) {
+            for (const interaction of this.actions.values() as IterableIterator<CustomPaginatedMessageAction>) {
                 if (isMessageButtonInteraction(interaction)) {
                     messageComponents.push(new MessageButton(interaction));
                 } else if (interaction.selectMenuIndex === 'set-1') {
@@ -190,6 +190,6 @@ function createPartitionedMessageRow(components: (MessageButton | MessageSelectM
     return actionRows;
 }
 
-type KelevraPaginatedMessageAction = PaginatedMessageAction & {
+type CustomPaginatedMessageAction = PaginatedMessageAction & {
     selectMenuIndex?: 'set-1' | 'set-2';
 };
