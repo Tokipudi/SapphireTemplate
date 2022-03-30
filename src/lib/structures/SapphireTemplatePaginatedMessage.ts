@@ -1,6 +1,6 @@
-import { isGuildBasedChannel, isMessageButtonInteraction, isMessageInstance, PaginatedMessage, PaginatedMessageAction, PaginatedMessageOptions, PaginatedMessagePage, runsOnInteraction } from "@sapphire/discord.js-utilities";
+import { createPartitionedMessageRow, isGuildBasedChannel, isMessageButtonInteraction, isMessageInstance, PaginatedMessage, PaginatedMessageAction, PaginatedMessagePage, runsOnInteraction } from "@sapphire/discord.js-utilities";
 import { isFunction } from "@sapphire/utilities";
-import { ButtonInteraction, CommandInteraction, Constants, Message, MessageActionRow, MessageButton, MessageOptions, MessageSelectMenu, SelectMenuInteraction, User, WebhookEditMessageOptions } from "discord.js";
+import { ButtonInteraction, CommandInteraction, Constants, ContextMenuInteraction, Message, MessageButton, MessageOptions, MessageSelectMenu, SelectMenuInteraction, User, WebhookEditMessageOptions } from "discord.js";
 
 /**
  * Taken from Skyra
@@ -8,91 +8,13 @@ import { ButtonInteraction, CommandInteraction, Constants, Message, MessageActio
  */
 export class SapphireTemplatePaginatedMessage extends PaginatedMessage {
 
-    public constructor(options: PaginatedMessageOptions = {}) {
-        super(options);
-
-        this.setActions([
-            {
-                customId: '@sapphire/paginated-messages.goToPage',
-                type: Constants.MessageComponentTypes.SELECT_MENU,
-                selectMenuIndex: 'set-1',
-                run: ({ handler, interaction }) => interaction.isSelectMenu() && (handler.index = parseInt(interaction.values[0], 10))
-            },
-            {
-                customId: '@sapphire/paginated-messages.firstPage',
-                style: 'PRIMARY',
-                emoji: '⏪',
-                type: Constants.MessageComponentTypes.BUTTON,
-                run: ({ handler }) => (handler.index = 0)
-            },
-            {
-                customId: '@sapphire/paginated-messages.previousPage',
-                style: 'PRIMARY',
-                emoji: '◀️',
-                type: Constants.MessageComponentTypes.BUTTON,
-                run: ({ handler }) => {
-                    if (handler.index === 0) {
-                        handler.index = handler.pages.length - 1;
-                    } else {
-                        --handler.index;
-                    }
-                }
-            },
-            {
-                customId: '@sapphire/paginated-messages.nextPage',
-                style: 'PRIMARY',
-                emoji: '▶️',
-                type: Constants.MessageComponentTypes.BUTTON,
-                run: ({ handler }) => {
-                    if (handler.index === handler.pages.length - 1) {
-                        handler.index = 0;
-                    } else {
-                        ++handler.index;
-                    }
-                }
-            },
-            {
-                customId: '@sapphire/paginated-messages.goToLastPage',
-                style: 'PRIMARY',
-                emoji: '⏩',
-                type: Constants.MessageComponentTypes.BUTTON,
-                run: ({ handler }) => (handler.index = handler.pages.length - 1)
-            },
-            {
-                customId: '@sapphire/paginated-messages.stop',
-                style: 'DANGER',
-                emoji: '⏹️',
-                type: Constants.MessageComponentTypes.BUTTON,
-                run: ({ collector }) => {
-                    collector.stop();
-                }
-            }
-        ]);
-    }
-
-    public override setActions(actions: CustomPaginatedMessageAction[]): this {
-        this.actions.clear();
-        return this.addActions(actions);
-    }
-
     public override addPage(page: PaginatedMessagePage): this {
         this.pages.push(page);
-
         return this;
     }
 
-    /**
-     * Sets up the message.
-     *
-     * @param messageOrInteraction The message or interaction that triggered this {@link PaginatedMessage}.
-     * Generally this will be the command message or an interaction
-     * (either a {@link CommandInteraction}, a {@link SelectMenuInteraction} or a {@link ButtonInteraction}),
-     * but it can also be another message from your client, i.e. to indicate a loading state.
-     *
-     * @param author The author the handler is for.
-     */
     protected async setUpMessage(
-        messageOrInteraction: Message | CommandInteraction | SelectMenuInteraction | ButtonInteraction,
+        messageOrInteraction: Message | CommandInteraction | ContextMenuInteraction | SelectMenuInteraction | ButtonInteraction,
         targetUser: User
     ): Promise<void> {
         // Get the current page
@@ -106,12 +28,12 @@ export class SapphireTemplatePaginatedMessage extends PaginatedMessage {
 
         // If we do not have more than 1 page then there is no reason to add message components
         if (this.pages.length > 1) {
-            const messageComponents: (MessageButton | MessageSelectMenu)[] = [];
 
-            for (const interaction of this.actions.values() as IterableIterator<CustomPaginatedMessageAction>) {
+            const messageComponents: (MessageButton | MessageSelectMenu)[] = [];
+            for (const interaction of this.actions.values() as IterableIterator<PaginatedMessageAction>) {
                 if (isMessageButtonInteraction(interaction)) {
                     messageComponents.push(new MessageButton(interaction));
-                } else if (interaction.selectMenuIndex === 'set-1') {
+                } else if (interaction.type === Constants.MessageComponentTypes.SELECT_MENU && interaction.customId === '@sapphire/paginated-messages.goToPage') {
                     if (this.pages.slice(25).length) { // Select page Menu by chunks to fit in 25 options only
                         const options = [];
                         const chunkSize = Math.round(this.pages.length / 25);
@@ -173,23 +95,3 @@ export class SapphireTemplatePaginatedMessage extends PaginatedMessage {
         }
     }
 }
-
-function createPartitionedMessageRow(components: (MessageButton | MessageSelectMenu)[]): MessageActionRow[] {
-    // Sort all buttons above select menus
-    components = components.sort((a, b) => (a.type === 'BUTTON' && b.type === 'SELECT_MENU' ? -1 : 0));
-
-    const buttons = components.slice(0, 5);
-    const selectMenu = components[5];
-
-    // Map all the components to MessageActionRows
-    const actionRows: MessageActionRow[] = [
-        new MessageActionRow().setComponents(buttons), //
-        new MessageActionRow().setComponents(selectMenu)
-    ];
-
-    return actionRows;
-}
-
-type CustomPaginatedMessageAction = PaginatedMessageAction & {
-    selectMenuIndex?: 'set-1' | 'set-2';
-};
