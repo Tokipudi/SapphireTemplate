@@ -23,7 +23,7 @@
     "@sapphire/discord.js-utilities": "^4.9.3",
     "@sapphire/fetch": "2.3.0",
     "@sapphire/framework": "next",
-    "@sapphire/plugin-logger": "2.2.0",
+    "@sapphire/plugin-logger": "2.2.1",
     "@sapphire/utilities": "^3.6.1",
     "@types/require-dir": "^1.0.2",
     "discord.js": "^13.6.0",
